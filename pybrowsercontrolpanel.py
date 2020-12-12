@@ -653,6 +653,21 @@ class Server:
 	def run(self):
 
 
+		# for page in self.pages:
+		# 	if not isinstance(page, Page):
+		# 		raise RuntimeError(f"Server.pages contains non-page object: {repr(page)}")
+		#
+		# 	# update all refs
+		# 	page.update_all()
+		#
+		# 	self.app.route(page.path, methods=["GET", "POST"])(page.get_request_handler())
+
+		app = self.prepare_app(self)
+
+		app.debug = True
+		app.run(host="0.0.0.0", port=80, debug=True)
+
+	def prepare_app(self):
 		for page in self.pages:
 			if not isinstance(page, Page):
 				raise RuntimeError(f"Server.pages contains non-page object: {repr(page)}")
@@ -662,9 +677,9 @@ class Server:
 
 			self.app.route(page.path, methods=["GET", "POST"])(page.get_request_handler())
 
+		return self.app
 
-		self.app.debug = True
-		self.app.run(host="0.0.0.0", port=80, debug=True)
+
 
 
 class UserException(Exception):
