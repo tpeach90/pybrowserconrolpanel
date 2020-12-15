@@ -298,7 +298,7 @@ class Page:
 			raise TypeError(f"{repr(function)} not a callable function")
 		if not (type(title) is str or title is None):
 			raise TypeError(f"input title: {repr(title)} not valid - must be str or None to infer")
-		if not (type(number_of_arguments) is list or number_of_arguments is None):
+		if not (type(number_of_arguments) is int or number_of_arguments is None):
 			raise TypeError(f"input number_of_arguments: {repr(number_of_arguments)} not valid - must be int or None to infer")
 		if not (type(field_titles) is list or field_titles is None):
 			raise TypeError(f"input field_titles: {repr(field_titles)} not valid - must be str or None to infer")
@@ -328,13 +328,20 @@ class Page:
 			title = ref
 		
 
-		argspec = inspect.getfullargspec(link_input)  
+		argspec = inspect.getfullargspec(function)
+		defaults = 0 if argspec.defaults is None else len(argspec.defaults) 
+		# check if function is bound
+		try:
+			x = function.__self__
+			argspec.args.pop(0)
+		except AttributeError:
+			pass
 
 		# check number_of_arguments is ok
 		if number_of_arguments is not None:
 
 			# check at least all non-optional arguments are used
-			if number_of_arguments < len(argspec.args) - len(argspec.defaults):
+			if number_of_arguments < len(argspec.args) - defaults:
 				raise ValueError(f"input number_of_arguments: {repr(number_of_arguments)} is too few for the function")
 			
 			# check that not too many arguments are specified (provided user hasn't included *args or similar in the signiture)
@@ -347,11 +354,15 @@ class Page:
 			if number_of_arguments is not None and number_of_arguments != len(field_titles):
 				raise ValueError(f"input field_titles: {repr(len(field_titles))} is different to number_of_arguments: {repr(number_of_arguments)}. If you are specifying field_titles you may leave number_of_arguments blank/as None and I will infer them.")
 
-			if len(field_titles) < len(argspec.args) - len(argspec.defaults):
+			if len(field_titles) < len(argspec.args) - defaults:
 				raise ValueError(f"input field_titles: {repr(len(field_titles))} is too few for the function")
 
 			if argspec.varargs is None and number_of_arguments > len(argspec.args):
 				raise ValueError(f"input field_titles: {repr(len(field_titles))} is too many for the function")
+
+			for field_title in field_titles:
+				if type(field_title) is not str:
+					raise ValueError(f"input field_titles contains non string {repr(field_title)}")
 		
 
 		
@@ -360,7 +371,7 @@ class Page:
 			# if field_titles was not None it will have already been checked that it is larger than the first parameter
 			if field_titles is None:
 				# min possible
-				number_of_arguments = len(argspec.args) - len(argspec.defaults)
+				number_of_arguments = len(argspec.args) - defaults
 			else:
 				number_of_arguments = len(field_titles)
 	
@@ -781,7 +792,7 @@ class Server:
 		#
 		# 	self.app.route(page.path, methods=["GET", "POST"])(page.get_request_handler())
 
-		app = self.prepare_app(self)
+		app = self.prepare_app()
 
 		app.debug = True
 		app.run(host="0.0.0.0", port=80, debug=True)
@@ -887,7 +898,44 @@ def has_length(length):
 	return checker
 
 
+
+
+
+
+
+
+
 if __name__ == "__main__":
-	# TODO add a sample server
-	pass
+
+	class TestPage(Page):
+		def __init__(self):
+			Page.__init__(self, "test", "/")
+			self.html_template = f"""
+<script src="{{{{ url_for('static', filename='page_script_minified.js') }}}}"></script>
+{{% autoescape false %}}
+{{{{ref("{self.link_input(self.test_input)}")}}}}
+{{{{ref("{self.link_input(self.test_input, number_of_arguments=5)}")}}}}
+{{{{ref("{self.link_input(self.test_input, field_titles=["hello", "hello again", "hello a third time"])}")}}}}
+<br>
+{{{{ref("output")}}}}
+{{% endautoescape %}}
+"""
+			self.add_output(self.output)
+			self.previous_entries = []
+
+		def test_input(self, val1, val2, *args):
+			h = [val1, val2]
+			h.extend(args)
+			string = "You entered: " + ", ".join(h)
+			self.previous_entries.append(string)
+			self.update_ref("output")
+			return string
+		
+		def output(self):
+			return "\n".join(self.previous_entries)
+	
+	server = Server()
+	server.pages.append(TestPage())
+	server.run()
+
 
