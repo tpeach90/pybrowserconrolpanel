@@ -206,6 +206,8 @@ class Page:
 		return decorator
 
 
+	# TODO probably remove these functions
+
 	def add_output(self, *args, **kwargs):
 		args_dict = args_kwargs_checker(args, kwargs, function=None, title="", ref="", escape=True, access=self.default_access)
 		exception = type_checker(args_dict, ref=str, escape=bool, access=bool)
@@ -278,6 +280,123 @@ class Page:
 
 		# call with above function to be run just before the page_object is added to the list
 		return self._page_object_function_director(page_obj, "function", function_before_appending=get_field_titles)
+	
+
+
+	# title="", number_of_arguments=-1, field_titles=[], ref="", escape=True, access=self.default_access
+	def link_input(self, 
+		function, 
+		title: 					str = None, 
+		number_of_arguments : 	int = None, 
+		field_titles : 			list = None, 
+		ref: 					str = None, 
+		escape: 				bool = True, 
+		**kwargs) -> str:
+
+		# type checks
+		if not callable(function):
+			raise TypeError(f"{repr(function)} not a callable function")
+		if not (type(title) is str or title is None):
+			raise TypeError(f"input title: {repr(title)} not valid - must be str or None to infer")
+		if not (type(number_of_arguments) is list or number_of_arguments is None):
+			raise TypeError(f"input number_of_arguments: {repr(number_of_arguments)} not valid - must be int or None to infer")
+		if not (type(field_titles) is list or field_titles is None):
+			raise TypeError(f"input field_titles: {repr(field_titles)} not valid - must be str or None to infer")
+		if not (type(ref) is str or ref is None):
+			raise TypeError(f"input ref: {repr(ref)} not valid - must be a string or None to be allocated")
+		if type(escape) is not bool:
+			raise TypeError(f"input escape: {repr(escape)} not valid - must be boolean")
+
+		
+
+		all_refs = [x.ref for x in self._page_objects]
+
+		# allocate a ref
+		if ref is not None:
+			if ref in all_refs:
+				raise ValueError(f"int ref: {repr(ref)} already exists")
+		elif function.__name__ not in all_refs:
+			ref = function.__name__
+		else:
+			i = 0
+			while function.__name__ + str(i) in all_refs:
+				i += 1
+			ref = function.__name__ + str(i)
+		
+		# set title
+		if title is None:
+			title = ref
+		
+
+		argspec = inspect.getfullargspec(link_input)  
+
+		# check number_of_arguments is ok
+		if number_of_arguments is not None:
+
+			# check at least all non-optional arguments are used
+			if number_of_arguments < len(argspec.args) - len(argspec.defaults):
+				raise ValueError(f"input number_of_arguments: {repr(number_of_arguments)} is too few for the function")
+			
+			# check that not too many arguments are specified (provided user hasn't included *args or similar in the signiture)
+			if argspec.varargs is None and number_of_arguments > len(argspec.args):
+				raise ValueError(f"input number_of_arguments: {repr(number_of_arguments)} is too many for the function")
+
+		# check field titles is ok - same checks as above
+		if field_titles is not None:
+
+			if number_of_arguments is not None and number_of_arguments != len(field_titles):
+				raise ValueError(f"input field_titles: {repr(len(field_titles))} is different to number_of_arguments: {repr(number_of_arguments)}. If you are specifying field_titles you may leave number_of_arguments blank/as None and I will infer them.")
+
+			if len(field_titles) < len(argspec.args) - len(argspec.defaults):
+				raise ValueError(f"input field_titles: {repr(len(field_titles))} is too few for the function")
+
+			if argspec.varargs is None and number_of_arguments > len(argspec.args):
+				raise ValueError(f"input field_titles: {repr(len(field_titles))} is too many for the function")
+		
+
+		
+		# infer number_of_arguments
+		if number_of_arguments is None:
+			# if field_titles was not None it will have already been checked that it is larger than the first parameter
+			if field_titles is None:
+				# min possible
+				number_of_arguments = len(argspec.args) - len(argspec.defaults)
+			else:
+				number_of_arguments = len(field_titles)
+	
+		# get field_titles
+		if field_titles is None:
+			field_titles = []
+			for i in range(0, number_of_arguments):
+				if i < len(argspec.args):
+					field_titles.append(argspec.args[i])
+				else:
+					field_titles.append(argspec.varargs + str(i - len(argspec.args)))
+
+
+
+		# create and add page_object
+		args_dict = {
+			"title": title,
+			"number_of_arguments": number_of_arguments,
+			"field_titles": field_titles,
+			"escape": escape,
+			**kwargs
+		}
+		prargs_dict = {
+			"function" : function
+		}
+
+		page_obj = self.PageObject(PageObjectEnum.input, args_dict, prargs_dict, ref)
+		self._page_objects.append(page_obj)
+
+		return ref
+
+
+
+
+
+
 
 
 	def set_default_access(self, access):
