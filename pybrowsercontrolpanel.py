@@ -627,7 +627,7 @@ class Page:
 			print(post_args)
 
 			if not {"action", "ref"} <= set(post_args.keys()):
-				return ' {"request_exception": "Malformed request: requires action and ref"} '
+				return ' {"request_exception": "Malformed request: requires action and ref"} ', 400
 
 			# what update data should be sent. the function is called *AFTER* the actual operation
 			def get_update_data_function():
@@ -660,14 +660,14 @@ class Page:
 					page_obj = i
 					break
 			if page_obj is None:
-				return ' {"request_exception": "ref not found"} '
+				return ' {"request_exception": "ref not found"} ', 400
 
 
 			if page_obj.kind == PageObjectEnum.input:
 				if post_args["action"] == "button":
 
 					if "field_values" not in post_args:
-						return ' {"request_exception": "input button request has no field_values"} '
+						return ' {"request_exception": "input button request has no field_values"} ', 400
 
 					try:
 						with redirect_stdout(page._logger):
@@ -680,7 +680,7 @@ class Page:
 						return json.dumps({"error": "An error occurred. You may wish to contact your network administrator."})
 
 				else:
-					return ' {"request_exception": "'+post_args["action"]+' is not a valid action"} '
+					return ' {"request_exception": "'+post_args["action"]+' is not a valid action"} ', 400
 
 			elif page_obj.kind == PageObjectEnum.function:
 				if post_args["action"] == "button":
@@ -696,16 +696,16 @@ class Page:
 						return json.dumps({"error": "An error occurred. You may wish to contact your network administrator."})
 
 				else:
-					return ' {"request_exception": "'+post_args["action"]+' is not a valid action"} '
+					return ' {"request_exception": "'+post_args["action"]+' is not a valid action"} ', 400
 
 			elif page_obj.kind == PageObjectEnum.toggle:
 				if post_args["action"] == "set":
 
 					if "value" not in post_args:
-						return ' {"request_exception": "toggle set contains no value" } '
+						return ' {"request_exception": "toggle set contains no value" } ', 400
 
 					if post_args["value"] not in ["True", "False", "true", "false", "0", "1"]:
-						return ' {"request_exception": "toggle set value not a boolean"} '
+						return ' {"request_exception": "toggle set value not a boolean"} ', 400
 
 					val = post_args["value"] in ["True", "true", "1"]
 
@@ -720,7 +720,7 @@ class Page:
 						return json.dumps({"error": "An error occurred. You may wish to contact your network administrator."})
 
 				else:
-					return ' {"request_exception": "'+post_args["action"]+' is not a valid action"} '
+					return ' {"request_exception": "'+post_args["action"]+' is not a valid action"} ', 400
 
 
 
