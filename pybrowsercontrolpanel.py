@@ -1,33 +1,15 @@
-# line 570 (572)
-
-from time import time
 from enum import Enum
 from contextlib import redirect_stdout
-
-from flask import Flask, redirect, url_for, request, render_template, render_template_string, send_from_directory, Response, session
-from flask_login import LoginManager, UserMixin, login_user
-from wtforms import Form, PasswordField, StringField, validators
-from subprocess import check_output
-from glob import glob
-from os import path, mkdir, chdir, getcwd
-from sys import path as module_path
-from time import sleep, time
-from jinja2 import Template
-from importlib import import_module
-from importlib import reload as reload_module
+from flask import Flask, request, render_template_string, Response
+from time import time
 from traceback import format_exc
-from html import escape as html_escape
 from collections.abc import Iterable
 from collections import deque
 import json
-import threading
 import inspect
-from pathvalidate import is_valid_filename
-import platform
 
 import default_obj_templates
 
-cwd = getcwd()
 
 class Logger:
 
