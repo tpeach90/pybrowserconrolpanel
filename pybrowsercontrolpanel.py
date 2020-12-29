@@ -67,7 +67,7 @@ class Logger:
 
 
 
-PageObjectEnum = Enum("PageObjectEnum", "function output file_list toggle input")
+PageObjectEnum = Enum("PageObjectEnum", "function output toggle input")
 
 class Page:
 
@@ -80,8 +80,6 @@ class Page:
 			self.ref = ref
 			self.evaluated = {}
 
-			# if kind in [PageObjectEnum.output, PageObjectEnum.file_list, PageObjectEnum.toggle]:
-			# 	self.args["evaluated"] = self.evaluated
 
 			self.version = 0
 			# self.version = 0 # increasing this number makes the browser reload the object (done when Page.update_ref called)
@@ -255,7 +253,7 @@ class Page:
 			# detect number of arguments
 			if args_dict["number_of_arguments"] == -1:
 				if args_name is not None: # infinite arguments possible
-					args_dict["number_of_arguments"] = max([len(keys), len(field_titles)])
+					args_dict["number_of_arguments"] = max([len(keys), len(args_dict["field_titles"])])
 				else:
 					args_dict["number_of_arguments"] = len(keys)
 			else:
@@ -485,22 +483,6 @@ class Page:
 			except Exception as e:
 				obj.evaluated = {"error": str(e)}
 
-		elif obj.kind == PageObjectEnum.file_list:
-			try:
-				files_in_folder = []
-				for path in sorted(glob("files/" + proj.name + "/" + obj.args["folder"] + "/*")):
-
-					if platform.system() == "Windows":
-						filename = path.split("\\")[-1]
-					else:
-						filename = path.split("/")[-1]
-
-					files_in_folder.append(filename)
-
-				obj.evaluated = {"value": files_in_folder}
-			except Exception as e:
-				obj.evaluated = {"error": str(e)}
-
 		else:
 			return
 
@@ -508,48 +490,6 @@ class Page:
 			obj.version += 1
 			obj.send_dict["version"] = obj.version
 
-
-
-
-		# old_evaluated = None
-		# if "evaluated" in obj.args:
-		# 	old_evaluated = obj.args["evaluated"].copy()
-		#
-		# if obj.kind == PageObjectEnum.output:
-		# 	try:
-		# 		obj.args["evaluated"] = {"value": obj.prargs["function"]()}
-		# 	except Exception as e:
-		# 		obj.args["evaluated"] = {"error": str(e)}
-		#
-		# elif obj.kind == PageObjectEnum.toggle:
-		# 	try:
-		# 		obj.args["evaluated"] = {"value": obj.prargs["getter"]()}
-		# 	except Exception as e:
-		# 		obj.args["evaluated"] = {"error": str(e)}
-		#
-		# elif obj.kind == PageObjectEnum.file_list:
-		# 	try:
-		# 		files_in_folder = []
-		# 		for path in sorted(glob("files/" + proj.name + "/" + obj.args["folder"] + "/*")):
-		#
-		# 			if platform.system() == "Windows":
-		# 				filename = path.split("\\")[-1]
-		# 			else:
-		# 				filename = path.split("/")[-1]
-		#
-		# 			files_in_folder.append(filename)
-		#
-		# 		obj.args["evaluated"] = {"value": files_in_folder}
-		# 	except Exception as e:
-		# 		obj.args["evaluated"] = {"error": str(e)}
-		#
-		# else:
-		# 	return
-
-
-		# # don't bother updating users if nothing has changed
-		# if obj.args["evaluated"] != old_evaluated:
-		# 	obj.send_dict["version"] += 1
 
 
 	def _gather_update_data(self, versions, log_version):
@@ -743,8 +683,6 @@ class Server:
 		@app.before_first_request
 		def render_html_pages():
 			print("rendering pages")
-			# ip = check_output('hostname -I', shell=True).decode("utf-8")
-			ip = "fix this Tom"
 			for page in self.pages:
 				# page._create_json()
 
@@ -759,38 +697,13 @@ class Server:
 					setup = page.setup,
 					page_objects = page._page_objects,
 					PageObject = PageObjectEnum,
-					ip = ip,
 					ref = page._html_code_of_ref #function
 
 				)
-			# self._homepage_html = render_template_string('homepage.html',
-			# 	pages = self.pages,
-			# 	ip = ip
-			# )
-
-
-		# @app.template_filter("wrap")
-		# def wrap(list):
-		# 	return ['"' + i + '"' for i in list]
-
-		# @app.route("/favicon.ico")
-		# def favicon():
-		# 	return send_from_directory("static", "images/raspiicon.png")
-
 
 
 
 	def run(self):
-
-
-		# for page in self.pages:
-		# 	if not isinstance(page, Page):
-		# 		raise RuntimeError(f"Server.pages contains non-page object: {repr(page)}")
-		#
-		# 	# update all refs
-		# 	page.update_all()
-		#
-		# 	self.app.route(page.path, methods=["GET", "POST"])(page.get_request_handler())
 
 		app = self.prepare_app()
 
