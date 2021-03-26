@@ -187,7 +187,7 @@ class Page:
 
 
 	# TODO probably remove these functions
-
+	# DEPRECATED - use link_output
 	def add_output(self, *args, **kwargs):
 		args_dict = args_kwargs_checker(args, kwargs, function=None, title="", ref="", escape=True, access=self.default_access)
 		exception = type_checker(args_dict, ref=str, escape=bool, access=bool)
@@ -197,7 +197,7 @@ class Page:
 		return self._page_object_function_director(page_obj, "function")
 
 
-	# TODO maybe remove this
+	# DEPRECATED, probably doesn't work either anyway
 	def add_toggle(self, *args, **kwargs):
 		args_dict = args_kwargs_checker(args, kwargs, setter=None, getter=None, title="", ref=None, escape=True, view_access=self.default_access, toggle_access=self.default_access)
 		exception = type_checker(args_dict, getter=callable, ref=str, escape=bool, view_access=bool, toggle_access=bool)
@@ -206,7 +206,7 @@ class Page:
 		page_obj = self.PageObject(PageObjectEnum.toggle, args_dict, prargs_dict, args_dict.pop("ref"))
 		return self._page_object_function_director(page_obj, "setter")
 
-
+	# DEPRECATED, use link_input
 	def add_input(self, *args, **kwargs):
 		args_dict = args_kwargs_checker(args, kwargs, function=None, title="", number_of_arguments=-1, field_titles=[], ref="", escape=True, access=self.default_access)
 		exception = type_checker(args_dict, ref=str, field_titles=list_of(str), number_of_arguments=int, escape=bool, access=bool)
@@ -337,7 +337,7 @@ class Page:
 			if len(field_titles) < len(argspec.args) - defaults:
 				raise ValueError(f"input field_titles: {repr(len(field_titles))} is too few for the function")
 
-			if argspec.varargs is None and number_of_arguments > len(argspec.args):
+			if argspec.varargs is None and len(field_titles) > len(argspec.args):
 				raise ValueError(f"input field_titles: {repr(len(field_titles))} is too many for the function")
 
 			for field_title in field_titles:
@@ -385,8 +385,69 @@ class Page:
 
 
 
+	def link_output(self,
+		function, 
+		title: 					str = None, 
+		ref: 					str = None, 
+		escape: 				bool = True, 
+		**kwargs) -> str:
+
+		# type checks
+		if not callable(function):
+			raise TypeError(f"output function: {repr(function)} not a callable function")
+		if not (type(title) is str or title is None):
+			raise TypeError(f"output title: {repr(title)} not valid - must be str or None to infer")
+		if not (type(ref) is str or ref is None):
+			raise TypeError(f"output ref: {repr(ref)} not valid - must be a string or None to be allocated")
+		if type(escape) is not bool:
+			raise TypeError(f"output escape: {repr(escape)} not valid - must be boolean")
+		
+
+		# check the callable function takes no arguments
+		argspec = inspect.getfullargspec(function)
+		# check if function is bound and remove "self" if so
+		try:
+			_ = function.__self__
+			argspec.args.pop(0)
+		except AttributeError:
+			pass
+		if len(argspec.args) != 0:
+			raise ValueError(f"output function: {repr(function)} must not take any arguments (except self if applicable)")
 
 
+		all_refs = [x.ref for x in self._page_objects]
+
+		# allocate a ref
+		if ref is not None:
+			if ref in all_refs:
+				raise ValueError(f"output ref: {repr(ref)} already exists")
+		elif function.__name__ not in all_refs:
+			ref = function.__name__
+		else:
+			i = 0
+			while function.__name__ + str(i) in all_refs:
+				i += 1
+			ref = function.__name__ + str(i)
+		
+		# set title
+		if title is None:
+			title = ref
+		
+		# create and add page_object
+		args_dict = {
+			"title": title,
+			"escape": escape,
+			**kwargs
+		}
+		prargs_dict = {
+			"function" : function
+		}
+
+		page_obj = self.PageObject(PageObjectEnum.output, args_dict, prargs_dict, ref)
+		self._page_objects.append(page_obj)
+
+		return ref
+		
 
 
 
@@ -812,10 +873,9 @@ if __name__ == "__main__":
 {{{{ref("{self.link_input(self.test_input, number_of_arguments=5)}")}}}}
 {{{{ref("{self.link_input(self.test_input, field_titles=["hello", "hello again", "hello a third time"])}")}}}}
 <br>
-{{{{ref("output")}}}}
+{{{{ref("{self.link_output(self.output)}")}}}}
 {{% endautoescape %}}
 """
-			self.add_output(self.output)
 			self.previous_entries = []
 
 		def test_input(self, val1, val2, *args):

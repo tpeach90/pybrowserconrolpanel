@@ -268,7 +268,7 @@ window.onload = function() {
 				return;
 
 				case "toggle":
-				if (objOfRef.pageEls.value == null) { // (.null means there was no itemtype="..." attribute)
+				if (objOfRef.pageEls.value == null) { // (null means there was no itemtype="..." attribute)
 					functionsOnServerObjectArgs.push(function(evaluated){});
 					return;
 				}
@@ -317,7 +317,7 @@ window.onload = function() {
 	$("#refresh").bind("click", function() {
 		$.getJSON(window.location.pathname+"?what=json", function(pageData) {
 			functionsOnServerObjectArgs.forEach((fn, i) => {
-				fn(pageData.objects[i].args);
+				fn(pageData.objects[i].evaluated);
 			});
 		});
 		return false;
