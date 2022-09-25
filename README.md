@@ -1,6 +1,6 @@
 # pybrowsercontrolpanel
 
-Create a web browser interface for a Python program. The pages display the same information on all browser sessions. See [example.py]() for all functionality.
+Create a web browser interface for a Python program. The pages display the same information on all browser sessions. See [example.py](example.py) for all functionality.
 
 Quickpage uses decorators to call pybrowsercontrolpanel methods.
 
@@ -29,7 +29,7 @@ In order to get the endpoint function for a Page, use `mypage.get_request_handle
 
 # quickpage
 
-Easier syntax with pages created by decorating classes. See [example2_quickpage.py]().
+Easier syntax with pages created by decorating classes. See [example2_quickpage.py](example2_quickpage.py).
 
 
 
