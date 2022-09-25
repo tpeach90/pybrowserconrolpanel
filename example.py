@@ -108,5 +108,5 @@ if __name__ == "__main__":
 
 	# sets up routes and runs a flask app.
 	# If you want to get a prepared flask app without running it, use 
-	# app = server.prepare_app(self):
+	# app = server.prepare_app():
 	server.run()

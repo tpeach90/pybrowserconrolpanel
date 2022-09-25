@@ -26,6 +26,8 @@ class Homepage:
 	def increase_counter(self):
 		self.counter += 1
 		return ""
+		# input functions are decorated to update all outputs after being called.
+		# this can also be done manually using self.page.update_all()
 	
 	@quickpage.set_input()
 	def increase_counter_by_amount(self, amount):
