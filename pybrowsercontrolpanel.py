@@ -10,6 +10,8 @@ import inspect
 
 import default_obj_templates
 
+page_counter = 0
+
 
 class Logger:
 
@@ -82,6 +84,8 @@ class Page:
 
 		if path == "" or path[0] != "/":
 			path = "/" + path
+		
+		# TODO check that path is a valid path.
 
 
 		self.name = name
@@ -516,7 +520,7 @@ class Page:
 
 		if obj.kind == PageObjectEnum.output:
 			try:
-				obj.evaluated = {"value": obj.prargs["function"]()}
+				obj.evaluated = {"value": str(obj.prargs["function"]())}
 			except Exception as e:
 				obj.evaluated = {"error": str(e)}
 
@@ -581,8 +585,13 @@ class Page:
 
 	# route requests for this page to this function - only works when flask server is running due to request.method functions etc
 	def get_request_handler(self):
+		global page_counter
 		for check in self._checks_on_server_start:
 			check()
+		# need to change the name of the endpoint function else flask complains
+		# TODO page counter is probably not secure, idk
+		self._request_handler.__func__.__name__ = "_request_handler_" + str(page_counter)
+		page_counter += 1
 		return self._request_handler
 
 	def _request_handler(page):
