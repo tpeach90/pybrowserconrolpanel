@@ -14,7 +14,13 @@ class Homepage:
 	@quickpage.after_init
 	def init_2(self):
 		# Now you have access to self.page
+		print(self.page.html_template)
 		self.page.html_template += "<br><br>This text was added using an @after_init function!"
+	
+	@quickpage.set_html_in_head()
+	def title(self):
+		return "<title>Quickpage Example</title>"
+
 	
 	@quickpage.set_html()
 	def top_text(self):
@@ -28,7 +34,7 @@ class Homepage:
 		return ""
 		# input functions are decorated to update all outputs after being called.
 		# this can also be done manually using self.page.update_all()
-	
+
 	@quickpage.set_input()
 	def increase_counter_by_amount(self, amount):
 		try:
@@ -81,6 +87,10 @@ class Homepage:
 class SecondPage:
 	def __init__(self, time):
 		self.time_of_creation = time
+	
+	@quickpage.set_html_in_head()
+	def title(self):
+		return "<title>Second Page | Quickpage Example</title>"
 	
 	@quickpage.set_html()
 	def txt(self):

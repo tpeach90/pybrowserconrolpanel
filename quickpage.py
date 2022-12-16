@@ -34,6 +34,13 @@ def set_html(*args, **kwargs):
 	return dec
 
 
+def set_html_in_head(*args, **kwargs):
+	def dec(fn):
+		page_queue.append(HtmlInHead(fn, args, kwargs))
+		return fn
+	return dec
+
+
 def set_output(*args, **kwargs):
 	def dec(fn):
 		page_queue.append(Output(fn, args, kwargs))
@@ -51,6 +58,13 @@ class Input:
 		self.kwargs = kwargs
 
 class Html:
+	def __init__(self, fn, args, kwargs):
+		self.fn = fn
+		self.args = args
+		self.kwargs = kwargs
+
+
+class HtmlInHead:
 	def __init__(self, fn, args, kwargs):
 		self.fn = fn
 		self.args = args
@@ -102,10 +116,9 @@ def make_quick_page(name=None, path=None):
 
 			self.page = Page(name, path)
 			
-			self.page.html_template += f"""<!DOCTYPE html>
-			<script src="{{{{ url_for('static', filename='page_script_minified.js') }}}}"></script>
-			{{% autoescape false %}}
-			"""
+
+			html_head_content = """<script src="{{ url_for('static', filename='page_script_minified.js') }}"></script>"""
+			html_body_content = ""
 
 			for qp_obj in fns:
 
@@ -125,15 +138,20 @@ def make_quick_page(name=None, path=None):
 					new_fn = new_context()
 					self.page._get_object_of_ref(ref).prargs["function"] = new_fn#.__get__(self, self.__class__)
 
-					self.page.html_template += f'{{{{ref("{ref}")}}}}'
+					html_body_content += f'{{{{ref("{ref}")}}}}'
 
 				elif type(qp_obj) is Html:
 					html_text = qp_obj.fn(self)  # expect no required args other then self.
-					self.page.html_template += str(html_text)
+					html_body_content += str(html_text)
+				
+				elif type(qp_obj) is HtmlInHead:
+					# expect no required args other then self.
+					html_text = qp_obj.fn(self)
+					html_head_content += str(html_text)
 
 				elif type(qp_obj) is Output:
 					ref = self.page.link_output(qp_obj.fn.__get__(self, self.__class__), *qp_obj.args, **qp_obj.kwargs)
-					self.page.html_template += f'{{{{ref("{ref}")}}}}'
+					html_body_content += f'{{{{ref("{ref}")}}}}'
 
 				elif type(qp_obj) is AfterInit:
 					pass
@@ -141,7 +159,15 @@ def make_quick_page(name=None, path=None):
 				else:
 					raise TypeError("Expecting Input, Html, Output, AfterInit only.")
 
-			self.page.html_template += f"{{% endautoescape %}}"
+			self.page.html_template += f"""{{% autoescape false %}}<!DOCTYPE html>
+<html>
+<head>
+{html_head_content}
+</head>
+<body>
+{html_body_content}
+</body>
+</html>{{% endautoescape %}}"""
 
 
 			for qp_obj in fns:
@@ -157,5 +183,11 @@ def make_quick_page(name=None, path=None):
 		return page_class
 	
 	return cl_decor
+
+
+if __name__ == "__main__":
+	with open("example2_quickpage.py", "r") as f:
+		exec(f.read())
+
 
 
